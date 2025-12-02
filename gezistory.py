@@ -7,13 +7,6 @@ import random
 from datetime import datetime, timedelta
 import pandas as pd
 
-# Plotly kütüphanesi kontrolü
-try:
-    import plotly.express as px
-except ImportError:
-    st.error("Sistem Hatası: Plotly yüklü değil. Terminale 'pip install plotly' yazın.")
-    st.stop()
-
 # --- 1. AYARLAR VE SABİTLER ---
 st.set_page_config(page_title="GeziStory", page_icon="🧿", layout="wide")
 
@@ -31,8 +24,6 @@ SHOPIER_LINK_REKLAM = "https://www.shopier.com/ShowProductNew/products.php?id=TE
 SHOPIER_LINK_BAGIS = "https://www.shopier.com/ShowProductNew/products.php?id=TEMSILI_BAGIS_LINK"
 SHOPIER_LINK_KURUMSAL = "https://www.shopier.com/ShowProductNew/products.php?id=KURUMSAL_SPONSOR_LINK"
 PLACEHOLDER_AD_IMG = "https://i.ibb.co/wNdhcmw/reklam-ver.png"
-TURKEY_GEOJSON_URL = "https://raw.githubusercontent.com/alpers/Turkey-Maps-GeoJSON/master/tr-cities-utf8.json"
-LOCAL_GEOJSON_FILE = "tr-cities.json"
 
 # STANDART 81 İL LİSTESİ
 ALL_PROVINCES = [
@@ -925,7 +916,6 @@ if hasattr(st, "dialog"):
     @st.dialog("✨ GeziStory Giriş Kapısı")
     def entry_dialog(fb):
         t1, t2 = st.tabs(["Giriş Yap", "Kayıt Ol"])
-        # --- entry_dialog İÇİNDEKİ "Giriş Yap" KISMINI GÜNCELLE ---
         with t1:
             with st.form("modal_login"):
                 m = st.text_input("E-posta")
@@ -933,14 +923,8 @@ if hasattr(st, "dialog"):
                 if st.form_submit_button("Giriş Yap", type="secondary"): 
                     u = fb.sign_in(m, p)
                     if u and 'localId' in u:
-                        # URL'ye Kaydet (Kalıcılık İçin)
-                        st.query_params["auth_token"] = u['idToken']
-                        st.query_params["auth_uid"] = u['localId']
-                        
                         profile_data = fb.get_profile(u['localId'])
                         st.session_state.update(user_token=u['idToken'], user_uid=u['localId'], user_nick=profile_data['nick'], user_balance=profile_data['balance'], user_role=profile_data['role'], user_points=profile_data['points'], user_saved_routes=profile_data['saved_routes'])
-                        st.success("Giriş Başarılı! Yönlendiriliyorsunuz...")
-                        time.sleep(1)
                         st.rerun() 
                     elif u is None:
                         st.error("Giriş başarısız! E-posta veya şifre hatalı olabilir.")
@@ -1729,34 +1713,63 @@ def render_admin(fb):
                         st.balloons(); st.success(f"{app['nick']} geziye gönderildi!"); time.sleep(2); st.rerun()
                     else: st.error("Havuzda yeterli bakiye yok!")
 
+# --- YENİ HAFİF HARİTA SİSTEMİ (ROZETLER) ---
+def render_conquest_map(visited_cities):
+    st.markdown("### 🗺️ Fetih Paneli")
+    st.caption("Gezdiğin iller **YEŞİL**, henüz gitmediklerin **GRİ** görünür.")
+    
+    # İlerleme Durumu
+    progress = len(visited_cities) / 81
+    st.progress(progress)
+    st.caption(f"Türkiye'nin %{int(progress*100)}'ini fethettin! ({len(visited_cities)}/81)")
+
+    # Rozet Izgarası (Grid)
+    html_content = '<div class="conquest-grid">'
+    for city in ALL_PROVINCES:
+        is_visited = city in visited_cities
+        # Eğer gezildiyse Yeşil sınıfı, değilse Gri sınıfı
+        css_class = "city-visited" if is_visited else "city-not-visited"
+        # İkon seçimi
+        icon = "✅" if is_visited else "⬜"
+        
+        # Tıklanabilir gibi görünmesin diye pointer-events kapalı olabilir ama şimdilik görsel olsun
+        html_content += f'<div class="city-badge {css_class}">{icon} {city}</div>'
+    
+    html_content += '</div>'
+    
+    # HTML'i Ekrana Bas
+    st.markdown(html_content, unsafe_allow_html=True)
+
 def render_profile(fb):
     p = fb.get_profile(st.session_state.user_uid)
     st.session_state.user_saved_routes = p.get('saved_routes', [])
     if p['nick'] == "Adsız": st.warning("⚠️ Hey Gezgin! Seni 'Adsız' olarak tanıyoruz. Lütfen aşağıdan kendine bir isim seç.")
     
+    # Profil Başlığı
     st.markdown(get_profile_header_html(p), unsafe_allow_html=True)
     
-    st.markdown("### 🗺️ Fetih Paneli")
+    # --- YENİ HARİTA BURADA ÇAĞIRILIYOR ---
     render_conquest_map(p.get('visited_cities', []))
+    # --------------------------------------
     
-    with st.expander("📍 Haritanı Boya (Şehir Ekle)"):
+    st.divider()
+    
+    # Şehir Ekleme Paneli
+    with st.expander("📍 Haritanı Boya / Şehir Ekle"):
         current_cities = p.get('visited_cities', [])
         selected_cities = st.multiselect(
-            "Gezdiğin İlleri Seç:", 
+            "Gezdiğin İlleri İşaretle:", 
             ALL_PROVINCES, 
             default=[c for c in current_cities if c in ALL_PROVINCES]
         )
         
         if st.button("Haritayı Güncelle", type="primary"):
             fb.update_visited_cities(st.session_state.user_uid, selected_cities)
-            st.success("Haritan başarıyla boyandı! 🎨")
+            st.success("Fetih listen güncellendi! 🎨")
             time.sleep(1)
             st.rerun()
-            
-    progress = len(p.get('visited_cities', [])) / 81
-    st.caption(f"Türkiye'nin %{int(progress*100)}'ini gezdin! ({len(p.get('visited_cities', []))}/81)")
-    st.progress(progress)
 
+    # Kimlik Güncelleme
     with st.expander("✏️ Kimlik Bilgilerini Güncelle", expanded=(p['nick'] == "Adsız")):
         with st.form("update_nick_form"):
             new_nick = st.text_input("Yeni Kullanıcı Adı", value=p['nick'])
@@ -1771,8 +1784,10 @@ def render_profile(fb):
                         st.success("İsmin başarıyla değiştirildi! 🎉"); time.sleep(1); st.rerun()
                     else: st.error("Bir hata oluştu, tekrar dene.")
                 else: st.success("Profil resmi güncellendi!"); time.sleep(1); st.rerun()
+    
     st.divider()
     
+    # Alt Sekmeler (Mesajlar, Paylaşımlar vs.)
     t1, t2, t3, t4 = st.tabs(["✉️ Mesajlar", "📝 Paylaşımlarım", "🇹🇷 Pasaport", "📦 Kayıtlar & Cüzdan"])
     
     with t1: 
@@ -1806,11 +1821,14 @@ def render_public_profile(fb, target_uid):
     
     st.markdown(get_profile_header_html(p), unsafe_allow_html=True)
     
+    # --- YENİ HARİTA SİSTEMİ (HATA VERMEZ) ---
     st.markdown(f"### 🗺️ {p['nick']}'in Fetih Paneli")
+    # Buraya da aynı hafif harita fonksiyonunu veriyoruz
     render_conquest_map(p.get('visited_cities', []))
 
     if st.session_state.user_token:
         col_follow, col_msg = st.columns(2)
+        # ... (Kodun geri kalanı aynı kalacak)
         my_following = fb.get_profile(st.session_state.user_uid).get('following', [])
         
         with col_follow:
@@ -1854,53 +1872,20 @@ def sidebar(fb):
         if st.session_state.user_token:
             st.write(f"Hoş geldin, **{st.session_state.user_nick}**"); st.caption(f"Bakiye: {st.session_state.user_balance} TL | Puan: {st.session_state.user_points}")
             if st.session_state.user_nick == "Adsız": st.error("🚨 Lütfen profilinden ismini güncelle!")
-            
-            if st.button("Çıkış", type="secondary"):
-                # Çıkışta URL'yi ve State'i Temizle
-                st.query_params.clear()
-                st.session_state.clear()
-                st.rerun()
+            if st.button("Çıkış", type="secondary"): st.session_state.clear(); st.rerun()
         else: st.info("👋 Hoş geldin! İçerikleri gezebilirsin. Etkileşim için yukarıdaki Sarı Buton'dan giriş yap.")
 
 def main():
-    # 1. Session State Başlangıç Ayarları
-    if 'user_token' not in st.session_state: 
-        st.session_state.update(user_token=None, user_uid=None, user_nick=None, user_balance=0, user_role='caylak', user_points=0, active_tab="kesfet", user_saved_routes=[], active_mood="Hepsi", seen_msgs_count=0)
-    
+    if 'user_token' not in st.session_state: st.session_state.update(user_token=None, user_uid=None, user_nick=None, user_balance=0, user_role='caylak', user_points=0, active_tab="kesfet", user_saved_routes=[], active_mood="Hepsi", seen_msgs_count=0)
     fb = FirebaseService(); st.markdown(get_app_css(), unsafe_allow_html=True)
-
-    # 2. OTURUM KURTARMA (REFRESH FIX)
-    # Eğer session boşsa ama URL'de token varsa, oturumu geri yükle
-    if not st.session_state.user_token:
-        qp = st.query_params
-        if "auth_token" in qp and "auth_uid" in qp:
-            try:
-                # Token var, profili çekip oturumu aç
-                restored_uid = qp["auth_uid"]
-                p = fb.get_profile(restored_uid)
-                if p and p['nick'] != 'Hata':
-                    st.session_state.update(
-                        user_token=qp["auth_token"], 
-                        user_uid=restored_uid, 
-                        user_nick=p['nick'], 
-                        user_balance=p['balance'], 
-                        user_role=p['role'], 
-                        user_points=p['points'],
-                        user_saved_routes=p.get('saved_routes', [])
-                    )
-                    st.toast(f"Tekrar hoş geldin {p['nick']}! (Oturum yenilendi) 👋")
-            except:
-                # Token bozuksa temizle
-                st.query_params.clear()
-
-    # 3. Hala token yoksa Anonim Giriş yap
     if not st.session_state.user_token: fb.sign_in_anonymously()
     
-    # 4. Güncel Verileri Çek (Eğer giriş yapıldıysa)
     if st.session_state.user_token:
-        # Her rerunda profili taze tutmak iyidir ama performansı korumak için sadece gerektiğinde çekilebilir.
-        # Şimdilik mevcut akışı koruyoruz.
-        pass
+        latest_profile = fb.get_profile(st.session_state.user_uid)
+        st.session_state.user_role = latest_profile.get('role', 'caylak')
+        st.session_state.user_nick = latest_profile.get('nick', 'Adsız')
+        st.session_state.user_balance = latest_profile.get('balance', 0)
+        st.session_state.user_points = latest_profile.get('points', 0)
 
     anno = fb.get_system_announcement()
     if anno: st.markdown(get_announcement_html(anno), unsafe_allow_html=True)
