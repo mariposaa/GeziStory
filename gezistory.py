@@ -99,7 +99,7 @@ html, body, [class*="css"] { font-family: 'Poppins', sans-serif; background-colo
 .hero-banner-container { width: 100%; overflow: hidden; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); border: 2px solid #222; margin-top: 10px; }
 .hero-banner-img { width: 100%; height: 140px; object-fit: cover; object-position: center; display: block; }
 
-/* KART TASARIMLARI */
+/* KART TASARIMLARI (Modernleştirilmiş) */
 .discover-card { 
     border-radius: 15px; 
     overflow: hidden; 
@@ -107,70 +107,112 @@ html, body, [class*="css"] { font-family: 'Poppins', sans-serif; background-colo
     margin-bottom: 15px; 
     background: var(--card-bg); 
     border: 1px solid #eee; 
+    transition: transform 0.3s ease, box-shadow 0.3s ease; 
 }
+.discover-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0,0,0,0.15); }
 .card-image-wrapper { position: relative; width: 100%; height: 220px; }
 .card-img-main { width: 100%; height: 100%; object-fit: cover; }
 .card-caption { padding: 15px; font-size: 13px; color: #444; line-height: 1.5; border-top: 1px solid #f5f5f5; }
 
-/* Etiketler */
+/* Etiketler ve Rozetler */
 .glass-tag { position: absolute; bottom: 10px; left: 10px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(6px); padding: 6px 12px; border-radius: 30px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); max-width: 90%; }
 .mini-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-color); object-fit: cover; }
-.user-info-text { font-size: 11px; font-weight: bold; color: #333 !important; line-height: 1.2; }
-.location-text { font-size: 9px; color: #444 !important; font-weight: normal; }
+.user-info-text { font-size: 11px; font-weight: bold; color: #333 !important; line-height: 1.2; } /* SİYAH ZORUNLU */
+.location-text { font-size: 9px; color: #444 !important; font-weight: normal; } /* KOYU GRİ ZORUNLU */
 .category-badge { position: absolute; top: 10px; right: 10px; background: rgba(30, 129, 176, 0.9); color: white; padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; backdrop-filter: blur(4px); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 .info-strip { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0)); padding: 40px 10px 10px 10px; color: #f1f1f1; font-size: 11px; text-align: right; pointer-events: none; }
 
-/* Butonlar */
-.stButton button { border-radius: 8px !important; font-weight: 600 !important; }
-.stButton button[kind="primary"] { background-color: var(--secondary-color) !important; color: #222 !important; border: none !important; }
+/* BUTONLAR */
+.stButton button { border-radius: 8px !important; font-weight: 600 !important; transition: all 0.3s ease !important; }
+.stButton button[kind="primary"] { background-color: var(--secondary-color) !important; color: #222 !important; border: none !important; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.4) !important; }
+.stButton button[kind="primary"]:hover { background-color: #e6c200 !important; transform: scale(1.02) !important; box-shadow: 0 6px 15px rgba(255, 215, 0, 0.5) !important; }
 
-/* Diğer Bileşenler */
+/* PROFİL & GAMIFICATION */
 .profile-header { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 25px; margin-bottom: 20px; border-left: 6px solid var(--primary-color); }
-.profile-avatar { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #eee; object-fit: cover; }
+.profile-avatar { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #eee; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 .profile-info { flex-grow: 1; }
-.profile-name { font-size: 26px; font-weight: 800; color: #2c3e50 !important; margin: 0; }
+.profile-name { font-size: 26px; font-weight: 800; color: #2c3e50 !important; margin: 0; } /* SİYAH ZORUNLU */
 .stat-box { background: #f0f4f8; padding: 8px 15px; border-radius: 8px; font-weight: bold; border: 1px solid #dde1e6; color: var(--primary-color); }
-.challenge-board { background: linear-gradient(135deg, #111, #333); color: #0f0; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
-.challenge-title { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
-.challenge-entry-card { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 15px; }
+
+/* CHALLENGE & PANO */
+.challenge-board { background: linear-gradient(135deg, #111, #333); color: #0f0; padding: 25px; border: 2px solid #0f0; border-radius: 15px; font-family: 'Courier New', monospace; box-shadow: 0 0 25px rgba(0, 255, 0, 0.3); text-align: center; margin-bottom: 20px; position: relative; overflow: hidden; }
+.challenge-title { font-size: 28px; font-weight: bold; text-transform: uppercase; animation: blink 2s infinite; margin-bottom: 10px; text-shadow: 0 0 10px #0f0; }
+@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+.challenge-entry-card { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 15px; border: 1px solid #eee; transition: transform 0.2s; }
+.challenge-entry-card:hover { transform: translateY(-3px); }
 .challenge-img { width: 100%; height: 200px; object-fit: cover; }
-.challenge-text { padding: 12px; font-size: 13px; font-style: italic; color: #555; background: #fffdf0; margin: 10px; border-radius: 0 8px 8px 0; border-left: 4px solid var(--secondary-color); }
+.challenge-text { padding: 12px; font-size: 13px; font-style: italic; color: #555; border-left: 4px solid var(--secondary-color); background: #fffdf0; margin: 10px; border-radius: 0 8px 8px 0; }
 .challenge-user { padding: 0 10px 10px 10px; font-weight: bold; font-size: 12px; color: #333; display: flex; justify-content: space-between; }
-.gastro-card { background-color: #fff8e1; border-left: 5px solid #ffc107; padding: 20px; border-radius: 10px; margin-bottom: 20px; color: #333; }
-.gastro-title { font-weight: 800; font-size: 18px; color: #d35400; margin-bottom: 8px; }
-.sidebar-box { background: white; border: 1px solid #eee; border-radius: 10px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.sidebar-title { font-weight: bold; font-size: 16px; margin-bottom: 10px; border-bottom: 2px solid #FFD700; display: inline-block; padding-bottom: 2px; color: #000 !important; }
-.route-card-summary { display: flex; flex-direction: column; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
+
+/* DİĞER BİLEŞENLER */
+.system-announcement { background-color: #fff8e1; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #ffc107; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.product-link-btn { display: inline-block; background: linear-gradient(45deg, #FF8F00, #FF6F00); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; text-decoration: none; margin-top: 8px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.2); transition: transform 0.2s; }
+.product-link-btn:hover { transform: scale(1.05); color: white; }
+
+/* GASTRO CARD */
+.gastro-card {
+    background-color: #fff8e1; 
+    border-left: 5px solid #ffc107; 
+    padding: 20px; 
+    border-radius: 10px; 
+    margin-bottom: 20px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    color: #333;
+}
+.gastro-title { font-weight: 800; font-size: 18px; color: #d35400; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+.gastro-item { margin-bottom: 5px; font-size: 14px; }
+
+/* ANKET KUTUSU - DÜZELTİLDİ */
+.poll-box { background: white !important; padding: 20px; border-radius: 12px; margin-top: 20px; border-top: 5px solid var(--primary-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+.poll-title { font-weight: bold; margin-bottom: 10px; font-size: 16px; color: #2c3e50 !important; } /* YAZI RENGİ SİYAH YAPILDI */
+
+.sponsor-pool-box { background: linear-gradient(135deg, #2c3e50, #4ca1af); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+.winner-card { border: 1px solid #eee; border-radius: 10px; padding: 10px; margin-bottom: 10px; background: #fff; display: flex; align-items: center; gap: 10px; }
+.route-card-horizontal { display: flex; flex-direction: column; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee; margin-bottom: 30px; }
+.route-header-collage { display: flex; height: 220px; width: 100%; position: relative; }
+.collage-left { width: 60%; height: 100%; position: relative; }
+.collage-right { width: 40%; height: 100%; display: flex; flex-direction: column; }
+.collage-img-main { width: 100%; height: 100%; object-fit: cover; }
+.collage-img-small { width: 100%; height: 50%; object-fit: cover; border-left: 2px solid white; }
+.collage-img-small:first-child { border-bottom: 2px solid white; }
+.route-header-single { position: relative; height: 200px; width: 100%; }
+.route-overlay-info { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 70%, transparent 100%); padding: 20px 15px 12px 15px; color: white; }
+.route-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.route-meta { font-size: 12px; display: flex; gap: 15px; opacity: 0.95; align-items: center; }
+.route-body { padding: 20px; }
+.route-summary { font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 20px; }
+.timeline-container { display: flex; align-items: flex-start; overflow-x: auto; padding-bottom: 10px; gap: 0px; }
+.timeline-step { display: flex; align-items: center; flex-shrink: 0; }
+.timeline-box { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px 12px; min-width: 140px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: transform 0.2s; }
+.timeline-box:hover { transform: scale(1.02); border-color: #1E81B0; background: #f0f7ff; }
+.t-icon { font-size: 20px; }
+.t-name { font-size: 12px; font-weight: bold; color: #333; }
+.t-price { font-size: 10px; color: #666; background: #eee; padding: 2px 6px; border-radius: 4px; }
+.timeline-arrow { color: #bbb; font-size: 18px; margin: 0 5px; display: flex; align-items: center; height: 100%; }
+.comment-box { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #eee; }
+.comment-user { font-weight: bold; font-size: 12px; color: #333; }
+.comment-text { font-size: 13px; color: #555; }
+.coffee-btn-container { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ddd; text-align: center; }
+.route-card-summary { display: flex; flex-direction: column; height: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; transition: transform 0.2s; }
+.route-card-summary:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
 .route-cover-small { width: 100%; height: 160px; object-fit: cover; }
-.route-info-box { padding: 12px; }
-.route-title-small { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 5px; }
-.route-meta-small { font-size: 11px; color: #666; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 8px; }
+.route-info-box { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.route-title-small { font-size: 16px; font-weight: bold; color: #222; margin-bottom: 5px; line-height: 1.3; }
+.route-meta-small { font-size: 11px; color: #666; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .route-badge { background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-.timeline-container { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; }
-.timeline-box { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; min-width: 120px; text-align: center; }
-.poll-box { background: white; padding: 20px; border-radius: 12px; margin-top: 20px; border-top: 5px solid var(--primary-color); }
-.sponsor-pool-box { background: linear-gradient(135deg, #2c3e50, #4ca1af); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
+
+/* EMPTY STATE */
 .empty-state-box { text-align: center; padding: 40px; color: #888; background: #fff; border-radius: 15px; border: 2px dashed #ddd; margin: 20px 0; }
 .empty-state-icon { font-size: 60px; display: block; margin-bottom: 10px; opacity: 0.7; }
-.product-link-btn { display: inline-block; background: linear-gradient(45deg, #FF8F00, #FF6F00); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; text-decoration: none; margin-top: 8px; font-weight: bold; }
-.winner-card { border: 1px solid #eee; border-radius: 10px; padding: 10px; margin-bottom: 10px; background: #fff; display: flex; align-items: center; gap: 10px; }
+.sidebar-box { background: white; border: 1px solid #eee; border-radius: 10px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.sidebar-title { font-weight: bold; font-size: 16px; margin-bottom: 10px; border-bottom: 2px solid #FFD700; display: inline-block; padding-bottom: 2px; color: #000 !important; }
+.conquest-grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 15px; }
+.city-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-align: center; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.city-visited { background-color: #2ecc71; color: white; border: 1px solid #27ae60; }
+.city-not-visited { background-color: #ecf0f1; color: #95a5a6; border: 1px solid #bdc3c7; }
+.city-badge:hover { transform: scale(1.05); }
 
-/* MOBİL İÇİN ÖZEL KURALLAR (RESPONSIVE) */
-@media only screen and (max-width: 768px) {
-    .main-logo { font-size: 32px; }
-    .logo-emoji { font-size: 28px; }
-    .hero-banner-img { height: 100px; }
-    .card-image-wrapper { height: 180px; } /* Mobilde resimler biraz daha kısa olsun */
-    .profile-header { flex-direction: column; text-align: center; padding: 15px; }
-    .profile-avatar { width: 80px; height: 80px; margin-bottom: 10px; }
-    .profile-info { width: 100%; }
-    .stat-box { display: inline-block; margin: 3px; font-size: 11px; padding: 5px 10px; }
-    .glass-tag { padding: 4px 8px; bottom: 5px; left: 5px; }
-    .mini-avatar { width: 30px; height: 30px; }
-    .user-info-text { font-size: 10px; }
-    .location-text { font-size: 8px; }
-    .challenge-text { font-size: 11px; }
-}
+::placeholder { color: #bbb !important; opacity: 1; }
 </style>"""
 
 def get_badge_html(role):
@@ -1313,33 +1355,18 @@ def render_kesfet(stories, fb, search_term=""):
     col_count = 6 if st.session_state.user_token else 5
     m_cols = st.columns(col_count)
     
-# --- MOBİL UYUMLU MOOD SEÇİCİ ---
-    # Butonlar mobilde alt alta dizildiği için kötü görünüyor.
-    # Bunun yerine yatay radyo butonları veya pills (yeni sürüm) kullanmak daha iyidir.
-    # Burada özel CSS ile buton görünümü verilmiş Radio kullanacağız.
+    def mood_btn(label, mood_key, col):
+        style = "primary" if st.session_state.active_mood == mood_key else "secondary"
+        if col.button(label, key=f"btn_{mood_key}", type=style, use_container_width=True):
+            st.session_state.active_mood = mood_key; st.rerun()
     
-    mood_options = ["🌍 Hepsi", "💸 Parasızım", "⚡ Acelem Var", "📸 Fotoğraf", "🍽️ Açım"]
+    mood_btn("🌍 Hepsi", "Hepsi", m_cols[0])
     if st.session_state.user_token:
-        mood_options.insert(1, "👥 Takip")
-    
-    # Seçili olanın indeksini bul
-    current_mood_label = next((m for m in mood_options if st.session_state.active_mood in m), "🌍 Hepsi")
-    try:
-        current_idx = mood_options.index(current_mood_label)
-    except: current_idx = 0
+        mood_btn("👥 Takip", "Takip", m_cols[1]); mood_btn("💸 Parasızım", "Parasiz", m_cols[2]); mood_btn("⚡ Acelem Var", "Hizli", m_cols[3]); mood_btn("📸 Fotoğraf", "Foto", m_cols[4]); mood_btn("🍽️ Açım", "Acim", m_cols[5])
+    else:
+        mood_btn("💸 Parasızım", "Parasiz", m_cols[1]); mood_btn("⚡ Acelem Var", "Hizli", m_cols[2]); mood_btn("📸 Fotoğraf", "Foto", m_cols[3]); mood_btn("🍽️ Açım", "Acim", m_cols[4])
+        if st.session_state.active_mood == "Takip": st.session_state.active_mood = "Hepsi"; st.rerun()
 
-    # Yatay Radyo Butonu (Mobilde de yatay kaydırılabilir olur, alt alta dizilmez)
-    selected_mood = st.radio("Modunu Seç:", mood_options, index=current_idx, horizontal=True, label_visibility="collapsed")
-    
-    # Seçimi İşle
-    # Emojiyi kaldırıp ham key'i buluyoruz (Örn: "🌍 Hepsi" -> "Hepsi")
-    mapping = {"🌍 Hepsi": "Hepsi", "👥 Takip": "Takip", "💸 Parasızım": "Parasiz", "⚡ Acelem Var": "Hizli", "📸 Fotoğraf": "Foto", "🍽️ Açım": "Acim"}
-    new_mood_key = mapping.get(selected_mood, "Hepsi")
-    
-    if st.session_state.active_mood != new_mood_key:
-        st.session_state.active_mood = new_mood_key
-        st.rerun()
-    
     mood = st.session_state.active_mood
     
     main_col, side_col = st.columns([0.7, 0.3])
@@ -1445,15 +1472,6 @@ def render_kesfet(stories, fb, search_term=""):
                         if u: fb.add_main_ad({"business_name": bn, "link": lnk, "image": u, "uid": st.session_state.user_uid}); st.success("Gönderildi!")
                     else: st.warning("Eksik bilgi.")
         st.markdown('</div>', unsafe_allow_html=True)
-# --- MOBİL İÇİN EKSTRA REKLAM ALANI (Sidebar Kapalıyken Görünsün) ---
-    st.divider()
-    st.caption("Sponsorlu İçerik")
-    active_user_ad_mobile = fb.get_active_main_ad()
-    if active_user_ad_mobile:
-        st.image(active_user_ad_mobile['image'], use_container_width=True)
-        st.markdown(f"**👉 [{active_user_ad_mobile.get('business_name', 'Fırsat')} İçin Tıkla]({active_user_ad_mobile['link']})**")
-    else:
-        st.image("https://via.placeholder.com/600x150?text=Mobil+Reklam+Alani", use_container_width=True)
 
 # --- render_kesfet fonksiyonunun bittiği yerin altı ---
 
