@@ -38,19 +38,13 @@ def get_city_from_coordinates(lat, lon):
 # --- 1. AYARLAR VE SABİTLER ---
 st.set_page_config(page_title="GeziStory", page_icon="🧿", layout="wide")
 
-# GÜVENLİK PROTOKOLÜ: Hibrit API Anahtarı Yönetimi
-try:
-    FIREBASE_API_KEY = st.secrets["general"]["FIREBASE_API_KEY"]
-    IMGBB_API_KEY = st.secrets["general"]["IMGBB_API_KEY"]
-    PROJECT_ID = st.secrets["general"]["PROJECT_ID"]
-except:
-    # YEDEK ANAHTARLAR (Fallback)
-    FIREBASE_API_KEY = "AIzaSyC3EMl5PW6g5dg9nw6OmJlBMe9gCHPqt24"
-    IMGBB_API_KEY = "ee85b5ea6763bbfa7faf74fa792874ab"
-    PROJECT_ID = "gezistory-app"
+# GÜVENLİK PROTOKOLÜ: Secrets Yönetimi
+FIREBASE_API_KEY = st.secrets["general"]["FIREBASE_API_KEY"]
+IMGBB_API_KEY = st.secrets["general"]["IMGBB_API_KEY"]
+PROJECT_ID = st.secrets["general"]["PROJECT_ID"]
 
 MAP_BANNER_URL = "https://i.ibb.co/KpKykTMf/Gemini-Generated-mage-4zpeqj4zp.png"
-SHOPIER_LINK_REKLAM = "https://www.shopier.com/ShowProductNew/products.php?id=TEMSILI_REKLAM_LINK"
+SHOPIER_LINK_REKLAM = "https://www.shopier.com/gezistory/41968453"
 # SHOPIER_LINK_BAGIS (Kaldırıldı)
 SHOPIER_LINK_KURUMSAL = "https://www.shopier.com/ShowProductNew/products.php?id=KURUMSAL_SPONSOR_LINK"
 PLACEHOLDER_AD_IMG = "https://i.ibb.co/wNdhcmw/reklam-ver.png"
@@ -2174,6 +2168,76 @@ class FirebaseService:
         }
         return badges.get(role, badges['caylak'])
 
+    # --- ADMIN CONTENT MANAGEMENT ---
+    def admin_get_latest_contents(self, content_type="stories", limit=20):
+        # content_type: 'stories' or 'forum_posts'
+        try:
+            url = f"{self.db_url}/{content_type}?key={FIREBASE_API_KEY}&pageSize={limit}"
+            r = requests.get(url)
+            res = []
+            if 'documents' in r.json():
+                for doc in r.json().get('documents', []):
+                    f = doc.get('fields', {})
+                    # Ortak alanları al
+                    item = {
+                        "id": doc['name'].split('/')[-1],
+                        "uid": f.get('uid', {}).get('stringValue', '-'),
+                        "author": f.get('yazar',{}).get('stringValue') or f.get('author',{}).get('stringValue') or 'Anonim',
+                        "date": f.get('tarih',{}).get('stringValue') or f.get('date',{}).get('stringValue') or f.get('date',{}).get('timestampValue') or '-',
+                    }
+                    
+                    if content_type == 'stories':
+                        item["title"] = f.get('baslik',{}).get('stringValue','-')
+                        item["city"] = f.get('sehir',{}).get('stringValue','-')
+                    else: # forum
+                        item["title"] = f.get('baslik',{}).get('stringValue') or f.get('title',{}).get('stringValue','-')
+                        item["body"] = f.get('icerik',{}).get('stringValue') or f.get('body',{}).get('stringValue','')
+                    
+                    res.append(item)
+            return res # Sıralama varsayılan (ID veya eklenme sırası) gelir
+        except: return []
+
+    def admin_search_content(self, content_type, query):
+        # content_type: 'stories' or 'forum_posts'
+        # Başlığa göre arama (Title)
+        try:
+            field_name = "baslik" if content_type == "stories" else "title"
+            # Forum postlarında title bazen 'baslik' bazen 'title' olabilir, ama yeni yapıda 'title' kullanıyoruz.
+            # Eski kayıtlar için 'baslik' da olabilir. Bu karmaşıklık için çift sorgu gerekebilir ama şimdilik standart 'baslik' (story) ve 'title' (forum) varsayalım.
+            
+            end_query = query + "\uf8ff"
+            payload = {
+                "structuredQuery": {
+                    "from": [{"collectionId": content_type}],
+                    "where": {"compositeFilter": {"op": "AND", "filters": [
+                        {"fieldFilter": {"field": {"fieldPath": field_name}, "op": "GREATER_THAN_OR_EQUAL", "value": {"stringValue": query}}},
+                        {"fieldFilter": {"field": {"fieldPath": field_name}, "op": "LESS_THAN", "value": {"stringValue": end_query}}}
+                    ]}},
+                    "limit": 10
+                }
+            }
+            r = requests.post(f"{self.db_url}:runQuery?key={FIREBASE_API_KEY}", json=payload)
+            res = []
+            if r.status_code == 200:
+                for item in r.json():
+                     if 'document' in item:
+                        doc = item['document']
+                        f = doc.get('fields', {})
+                        res.append({
+                            "id": doc['name'].split('/')[-1],
+                            "title": f.get(field_name,{}).get('stringValue','-'),
+                            "author": f.get('yazar',{}).get('stringValue') or f.get('author',{}).get('stringValue') or 'Anonim',
+                            "uid": f.get('uid', {}).get('stringValue', '-')
+                        })
+            return res
+        except: return []
+
+    def admin_delete_content(self, content_type, doc_id):
+        try:
+            requests.delete(f"{self.db_url}/{content_type}/{doc_id}?key={FIREBASE_API_KEY}")
+            st.cache_data.clear() # Cache temizle
+            return True
+        except: return False
 def upload_to_imgbb(file):
     try: return requests.post("https://api.imgbb.com/1/upload", data={"key": IMGBB_API_KEY}, files={"image": file.getvalue()}).json()["data"]["url"]
     except: return None
@@ -2200,13 +2264,9 @@ def render_login_register_form(fb, key_suffix=""):
             pp = st.text_input("Şifre", type="password", key=f"reg_pass_{key_suffix}")
             
             # Yasal Metin Oku Butonu
-            col_terms, col_btn = st.columns([3, 1])
-            with col_terms:
-                terms = st.checkbox("Kullanıcı Sözleşmesi'ni ve Gizlilik Politikasını okudum, kabul ediyorum.", key=f"terms_chk_{key_suffix}")
-            with col_btn:
-                # Form içinde buton submit eder, bu yüzden form dışında link versek daha iyi ama
-                # Şimdilik yazıyla halledelim veya link verelim.
-                pass
+            terms = st.checkbox("Kullanıcı Sözleşmesi'ni ve Gizlilik Politikasını okudum, kabul ediyorum.", key=f"terms_chk_{key_suffix}")
+            with st.expander("📄 Sözleşmeyi Görüntüle"):
+                st.markdown(fb.get_legal_texts())
             
             if st.form_submit_button("Kayıt Ol", type="primary"):
                 if not n: st.error("Lütfen kendinize bir kullanıcı adı belirleyin!")
@@ -2628,8 +2688,69 @@ def render_create_route_section(fb):
                     st.session_state.new_stops = []; st.session_state.show_create = False
                     st.balloons(); st.success("Rota başarıyla yayınlandı! (+100 Puan)"); time.sleep(2); st.rerun()
 
+def render_single_post(p, fb, key_prefix=""):
+    """Tek bir forum postunu render eder. Kod tekrarını önlemek için eklendi."""
+    extra_info = ""
+    if p.get('city'): extra_info = f" ({p['city']})"
+    if p.get('from_where'): extra_info = f" ({p['from_where']} ➝ {p['to_where']})"
+    
+    # Highlight modunda (key_prefix varsa) varsayılan olarak açık gelsin (expanded=True)
+    is_expanded = True if key_prefix else False
+    
+    with st.expander(f"📌 {p['title']}{extra_info}  |  👤 {p['author']}  |  🕒 {p['date'][:10]}", expanded=is_expanded):
+        c_del, c_profile = st.columns([1, 6])
+        if st.session_state.user_uid == p['uid']:
+            if c_del.button("🗑️ Sil", key=f"{key_prefix}del_fp_{p['id']}"): fb.delete_forum_post(p['id']); st.rerun()
+        if c_profile.button(f"👤 {p['author']}'ın Profiline Bak", key=f"{key_prefix}vp_fp_{p['id']}"):
+            st.session_state.view_target_uid = p['uid']
+            st.session_state.active_tab = "public_profile"
+            st.rerun()
+
+        st.markdown(f"**{p['body']}**"); st.divider()
+        c_like, c_comm_count = st.columns([1, 5])
+        is_liked = st.session_state.user_uid in p['likes'] if st.session_state.user_uid else False
+        if c_like.button(f"{'❤️' if is_liked else '🤍'} {len(p['likes'])}", key=f"{key_prefix}f_like_{p['id']}"):
+            if st.session_state.user_token: fb.update_forum_interaction(p['id'], "like", data={'current_likes': p['likes']}); st.rerun()
+            else: st.toast("Giriş yapmalısın!")
+        c_comm_count.caption(f"💬 {len(p['comments'])} Yorum")
+        for c in p['comments']: st.markdown(f"<div style='background:#f9f9f9; padding:8px; border-radius:5px; margin-bottom:5px; font-size:13px;'><b>{c['user']}:</b> {c['text']}</div>", unsafe_allow_html=True)
+        if st.session_state.user_token:
+            with st.form(key=f"{key_prefix}f_comm_form_{p['id']}", clear_on_submit=True):
+                new_c = st.text_input("Cevap Yaz (+3 Puan)", placeholder="Fikrini belirt...")
+                if st.form_submit_button("Gönder", type="secondary") and new_c:
+                    fb.update_forum_interaction(p['id'], "comment", data={'text': new_c, 'current_comments': p['comments']}); st.toast("Cevaplandı! +3 Puan"); time.sleep(1); st.rerun()
+
 def render_forum(fb):
     st.markdown("### 🗣️ Gezgin Forumu")
+
+    # --- HIGHLIGHTED POST (ARANAN KONU) ---
+    if 'forum_focus' in st.session_state and st.session_state.forum_focus:
+        # Performans için sadece ilgili post'u bulmaya çalışalım ama get_forum_posts cacheli değilse mecburen hepsini çekiyoruz
+        # FirebaseService yapısına göre şimdilik hepsini çekip filter yapalım.
+        all_posts_temp = fb.get_forum_posts()
+        target_post = next((x for x in all_posts_temp if x['id'] == st.session_state.forum_focus), None)
+        
+        if target_post:
+            st.markdown("""
+            <div style="background-color:#fff3e0; padding:10px; border-radius:8px; border-left:5px solid #ff9800; margin-bottom:20px;">
+                <h5 style="margin:0; color:#e65100;">🔍 Aradığınız Konu</h5>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Özel render (Key prefix: 'hl_')
+            render_single_post(target_post, fb, key_prefix="hl_")
+            
+            if st.button("❌ İşaretlemeyi Kaldır / Tümünü Göster", key="cls_focus_btn"):
+                del st.session_state.forum_focus
+                st.rerun()
+            
+            st.divider()
+        else:
+            st.info("Aradığınız konu bulunamadı veya silinmiş.")
+            if st.button("Tüm Konulara Dön"):
+                del st.session_state.forum_focus
+                st.rerun()
+
     
     if st.session_state.user_token:
         with st.expander("➕ Yeni Konu Başlat (+15 Puan)", expanded=False):
@@ -2667,31 +2788,7 @@ def render_forum(fb):
                 render_empty_state("Bu kategoride henüz ses yok...", "📭")
             else:
                 for p in cat_posts:
-                    extra_info = ""
-                    if p.get('city'): extra_info = f" ({p['city']})"
-                    if p.get('from_where'): extra_info = f" ({p['from_where']} ➝ {p['to_where']})"
-                    with st.expander(f"📌 {p['title']}{extra_info}  |  👤 {p['author']}  |  🕒 {p['date'][:10]}"):
-                        c_del, c_profile = st.columns([1, 6])
-                        if st.session_state.user_uid == p['uid']:
-                            if c_del.button("🗑️ Sil", key=f"del_fp_{p['id']}"): fb.delete_forum_post(p['id']); st.rerun()
-                        if c_profile.button(f"👤 {p['author']}'ın Profiline Bak", key=f"vp_fp_{p['id']}"):
-                            st.session_state.view_target_uid = p['uid']
-                            st.session_state.active_tab = "public_profile"
-                            st.rerun()
-
-                        st.markdown(f"**{p['body']}**"); st.divider()
-                        c_like, c_comm_count = st.columns([1, 5])
-                        is_liked = st.session_state.user_uid in p['likes'] if st.session_state.user_uid else False
-                        if c_like.button(f"{'❤️' if is_liked else '🤍'} {len(p['likes'])}", key=f"f_like_{p['id']}"):
-                            if st.session_state.user_token: fb.update_forum_interaction(p['id'], "like", data={'current_likes': p['likes']}); st.rerun()
-                            else: st.toast("Giriş yapmalısın!")
-                        c_comm_count.caption(f"💬 {len(p['comments'])} Yorum")
-                        for c in p['comments']: st.markdown(f"<div style='background:#f9f9f9; padding:8px; border-radius:5px; margin-bottom:5px; font-size:13px;'><b>{c['user']}:</b> {c['text']}</div>", unsafe_allow_html=True)
-                        if st.session_state.user_token:
-                            with st.form(key=f"f_comm_form_{p['id']}", clear_on_submit=True):
-                                new_c = st.text_input("Cevap Yaz (+3 Puan)", placeholder="Fikrini belirt...")
-                                if st.form_submit_button("Gönder", type="secondary") and new_c:
-                                    fb.update_forum_interaction(p['id'], "comment", data={'text': new_c, 'current_comments': p['comments']}); st.toast("Cevaplandı! +3 Puan"); time.sleep(1); st.rerun()
+                    render_single_post(p, fb)
 
 def render_gurme(fb):
     st.markdown("### 🎟️ Fırsatlar Dünyası")
@@ -3164,16 +3261,21 @@ def render_kesfet(stories, fb, search_term=""):
             
         # 2. Durum: Duyuru Yoksa -> Son Aktiviteler (Eski Yöntem)
         else:
-            st.markdown('<div class="sidebar-box" style="min-height: 250px;"><div class="sidebar-title">📢 Duyuru - Son Aktivite</div>', unsafe_allow_html=True)
-            st.caption("Son Aktiviteler:")
+            # HTML Link Yapısına Dönüştürüldü (Kutu içi görünüm için)
+            # Yükseklik sabitlendi ve taşmalar gizlendi (overflow:hidden)
+            html_out = '<div class="sidebar-box" style="height: 280px; overflow: hidden; display: flex; flex-direction: column;"><div class="sidebar-title" style="margin-bottom: 5px;">📢 Duyuru - Son Aktivite</div>'
+            html_out += '<div style="font-size:12px; color:#666; margin-bottom:10px;">Son Aktiviteler:</div>'
+            
+            # Son 5 aktivite (Kullanıcı İsteği: 5'e çıkarıldı)
             for p in fb.get_forum_posts()[:5]:
-                # Metni kısalt (uzun başlıklar kutuyu bozmasın)
-                btn_title = f"💬 {p['title'][:25]}..." if len(p['title']) > 25 else f"💬 {p['title']}"
-                if st.button(btn_title, key=f"sb_fp_{p['id']}"):
-                    st.session_state.active_tab = "forum"
-                    st.session_state.forum_focus = p['id']
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+                # Metni kısalt
+                display_title = f"{p['title'][:25]}..." if len(p['title']) > 25 else p['title']
+                
+                # HTML Link (Boşluksuz yapı) & Cookie Consent Fix
+                html_out += f'''<div style="margin-bottom:6px; border-bottom:1px solid #eee; padding-bottom:4px;"><a href="?tab=forum&focus_post={p['id']}&cookie_consent=true" target="_self" style="text-decoration:none; color:#2C3E50; font-weight:bold; font-size:13px; display: block;">💬 {display_title}</a></div>'''
+                
+            html_out += '</div>'
+            st.markdown(html_out, unsafe_allow_html=True)
 
         st.markdown('<div class="sidebar-box"><div class="sidebar-title">✨ Sponsor</div></div>', unsafe_allow_html=True)
         
@@ -3696,8 +3798,63 @@ def render_admin(fb):
                     st.error(warning_msg)
 
     with t2:
-        st.markdown("### İçerik Yönetimi")
-        st.info("Yakında...")
+        st.markdown("### 🗂️ İçerik Yönetimi")
+        ct1, ct2 = st.tabs(["Hikayeler (Rotalar)", "Forum Gönderileri"])
+        
+        def render_content_manager(c_type, c_label):
+            st.caption(f"{c_label} için işlem yapın.")
+            
+            # 1. ARAMA / ID SİLME
+            with st.expander("🔍 İçerik Ara veya ID ile Sil", expanded=True):
+                col_s1, col_s2 = st.columns([3, 1])
+                search_q = col_s1.text_input("Başlık Ara", key=f"s_q_{c_type}")
+                if col_s2.button("Ara", key=f"s_btn_{c_type}"):
+                    if len(search_q) < 3: st.warning("En az 3 harf.")
+                    else:
+                        st.session_state[f"search_res_{c_type}"] = fb.admin_search_content(c_type, search_q)
+                
+                # Arama Sonuçları
+                if f"search_res_{c_type}" in st.session_state and st.session_state[f"search_res_{c_type}"]:
+                    st.info(f"{len(st.session_state[f'search_res_{c_type}'])} sonuç bulundu.")
+                    for item in st.session_state[f"search_res_{c_type}"]:
+                        c_res1, c_res2 = st.columns([4, 1])
+                        c_res1.markdown(f"**{item['title']}** (Yazar: {item['author']})")
+                        c_res1.caption(f"ID: `{item['id']}`")
+                        if c_res2.button("🗑️ SİL", key=f"del_search_{item['id']}"):
+                             fb.admin_delete_content(c_type, item['id'])
+                             st.success("Silindi! (Cache temizlendi)"); time.sleep(1); st.rerun()
+
+            st.divider()
+            
+            # 2. İŞLEM (ID İLE DİREKT SİLME)
+            with st.expander("💣 ID ile Direkt Sil (Keskin Nişancı Modu)"):
+                del_id = st.text_input("Silinecek İçerik ID'si", key=f"direct_del_id_{c_type}")
+                if st.button("Bu ID'yi Kalıcı Olarak Sil", key=f"btn_del_id_{c_type}", type="primary"):
+                    if fb.admin_delete_content(c_type, del_id):
+                        st.success("İçerik uçuruldu 🚀"); time.sleep(1); st.rerun()
+                    else:
+                        st.error("Silinemedi (ID hatalı olabilir).")
+
+            st.divider()
+
+            # 3. Son 20 Gönderi (GÖZETİM KULESİ)
+            st.subheader(f"Gözetim Kulesi: Son 20 {c_label}")
+            latest = fb.admin_get_latest_contents(c_type, limit=20)
+            if not latest:
+                st.info("İçerik yok.")
+            else:
+                for item in latest:
+                    with st.container():
+                        c_l1, c_l2 = st.columns([5, 1])
+                        c_l1.markdown(f"**{item['title']}** | 👤 {item['author']}")
+                        c_l1.caption(f"📅 {item.get('date','-')[:10]} | ID: `{item['id']}`")
+                        if c_l2.button("Sil", key=f"del_lst_{item['id']}"):
+                            fb.admin_delete_content(c_type, item['id'])
+                            st.rerun()
+                        st.markdown("---")
+
+        with ct1: render_content_manager("stories", "Hikaye")
+        with ct2: render_content_manager("forum_posts", "Forum Postu")
     with t3:
         st.markdown("### 📢 Duyuru - Son Aktivite Yönetimi")
         sc = fb.get_sidebar_content()
@@ -4148,10 +4305,20 @@ def render_cookie_consent():
 def main():
     # Çerez Onayı Kontrolü (En üstte)
     render_cookie_consent()
-    
+
     # CSS'i Yükle
     st.markdown(get_app_css(), unsafe_allow_html=True)
     if 'user_token' not in st.session_state: st.session_state.update(user_token=None, user_uid=None, user_nick=None, user_balance=0, user_role='caylak', user_points=0, active_tab="kesfet", user_saved_routes=[], active_mood="Hepsi", seen_msgs_count=0)
+
+    # --- URL PARAMETRE KONTROLÜ (TAŞINDI: Varsayılan değerlerden SONRA çalışmalı) ---
+    # Bu kod, yukarıdaki active_tab="kesfet" atamasını ezer.
+    qp = st.query_params
+    if "tab" in qp:
+        st.session_state.active_tab = qp["tab"]
+        if "focus_post" in qp:
+            st.session_state.forum_focus = qp["focus_post"]
+        # Parametreleri temizle (Temiz URL için)
+        st.query_params.clear()
     fb = FirebaseService()
     if "visit_counted" not in st.session_state: fb.increment_daily_visits(); st.session_state.visit_counted = True
     
