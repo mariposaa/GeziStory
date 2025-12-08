@@ -38,6 +38,44 @@ def get_city_from_coordinates(lat, lon):
 # --- 1. AYARLAR VE SABİTLER ---
 st.set_page_config(page_title="GeziStory", page_icon="🧿", layout="wide")
 
+# --- BAKIM MODU ---
+MAINTENANCE_MODE = True
+
+if MAINTENANCE_MODE:
+    st.markdown("""
+        <style>
+        .maintenance-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh;
+            text-align: center;
+            font-family: 'Helvetica Neue', sans-serif;
+            color: #2C3E50;
+        }
+        .maintenance-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        .maintenance-text {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .maintenance-subtext {
+            font-size: 18px;
+            color: #7F8C8D;
+        }
+        </style>
+        <div class="maintenance-container">
+            <div class="maintenance-icon">🛠️</div>
+            <div class="maintenance-text">Bakımdayız ama merak etme yakında geliyoruz</div>
+            <div class="maintenance-subtext">Daha iyi bir deneyim için çalışıyoruz. Lütfen daha sonra tekrar deneyin.</div>
+        </div>
+    """, unsafe_allow_html=True)
+    st.stop()
+
 # GÜVENLİK PROTOKOLÜ: Secrets Yönetimi
 FIREBASE_API_KEY = st.secrets["general"]["FIREBASE_API_KEY"]
 IMGBB_API_KEY = st.secrets["general"]["IMGBB_API_KEY"]
